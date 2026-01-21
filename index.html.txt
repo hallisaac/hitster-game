@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Hitster Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root { --spotify-green: #1DB954; --dark-bg: #121212; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--dark-bg); color: white; text-align: center; margin: 0; padding: 20px; }
+        #reader { width: 100%; max-width: 400px; margin: 20px auto; border-radius: 20px; overflow: hidden; border: 2px solid var(--spotify-green); background: #000; min-height: 250px; }
+        .btn { background: var(--spotify-green); color: white; border: none; padding: 18px 30px; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 10px; width: 80%; }
+        #game-interface { display: none; margin-top: 20px; }
+        #answer-box { margin-top: 20px; padding: 20px; border: 1px dashed #555; border-radius: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: var(--spotify-green)">Hitster Scanner</h1>
+    
+    <div id="scanner-section">
+        <div id="reader"></div>
+        <button class="btn" onclick="startScanner()">Tap to Start Camera</button>
+        <p id="error-msg" style="color: #ff4444; font-size: 12px;"></p>
+    </div>
+
+    <div id="game-interface">
+        <div id="player-container"></div>
+        <button class="btn" id="reveal-btn" onclick="revealAnswer()">Show Song & Year</button>
+        <div id="answer-box">
+            <h2 id="song-info">Answer Revealed!</h2>
+            <p>Check the player above for details.</p>
+        </div>
+        <button class="btn" style="background:#333" onclick="location.reload()">Scan Next Card</button>
+    </div>
+
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+        const errorMsg = document.getElementById('error-msg');
+
+        function startScanner() {
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    html5QrCode.stop().then(() => {
+                        document.getElementById('scanner-section').style.display = 'none';
+                        document.getElementById('game-interface').style.display = 'block';
+                        
+                        const trackId = decodedText.includes('track/') ? decodedText.split('track/')[1].split('?')[0] : null;
+                        
+                        if (trackId) {
+                            document.getElementById('player-container').innerHTML = 
+                                `<iframe src="https://open.spotify.com/embed/track/${trackId}" width="100%" height="152" frameBorder="0" allow="autoplay; encrypted-media"></iframe>`;
+                        } else {
+                            alert("Not a valid Spotify track link!");
+                            location.reload();
+                        }
+                    });
+                },
+                (errorMessage) => {
+                    // This ignores the constant "no QR found" errors while scanning
+                }
+            ).catch(err => {
+                errorMsg.innerText = "Camera Error: " + err;
+            });
+        }
+
+        function revealAnswer() {
+            document.getElementById('answer-box').style.display = 'block';
+            document.getElementById('reveal-btn').style.display = 'none';
+        }
+
+        // Auto-start attempt
+        window.addEventListener('load', startScanner);
+    </script>
+</body>
+</html>
